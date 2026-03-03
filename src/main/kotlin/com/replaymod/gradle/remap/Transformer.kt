@@ -159,11 +159,16 @@ class Transformer(private val map: MappingSet) {
                 val file = vfs.findFileByIoFile(tmpDir.resolve(name).toFile())!!
                 val psiFile = psiManager.findFile(file)!!
 
-                var (text, errors) = try {
-                    PsiMapper(map, remappedEnv?.project, psiFile, analysis.bindingContext, patterns).remapFile()
-                } catch (e: Exception) {
-                    throw RuntimeException("Failed to map file \"$name\".", e)
-                }
+                var (text, errors) =
+                    if (processedSources.containsKey(name)) {
+                        Pair(processedSources[name]!!, mutableListOf())
+                    } else {
+                        try {
+                            PsiMapper(map, remappedEnv?.project, psiFile, analysis.bindingContext, patterns).remapFile()
+                        } catch (e: Exception) {
+                            throw RuntimeException("Failed to map file \"$name\".", e)
+                        }
+                    }
 
                 if (autoImports != null && "/* remap: no-manage-imports */" !in text) {
                     val processedText = processedSources[name] ?: text
